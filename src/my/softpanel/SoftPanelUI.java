@@ -4,12 +4,17 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.Point;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -28,19 +33,22 @@ import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
+import javax.swing.event.MouseInputAdapter;
 
 import actionlisteners.ExitSoftPanel;
 import components.Led;
 
 public class SoftPanelUI extends JPanel {
 	private static JLayeredPane[] gPane;
-	private static JLabel[] gP;
+	private static JLabel[] gP, sL, sLedLabel; // gP = gauge pointer, sL = switch lever
+	private static ImageIcon[] lever;
 	private Led[][] ledArray;
 	private static JLabel[][] ledLabel;
 	private static boolean guiBuilt;
+	private Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
 	
     public SoftPanelUI() {
-    	//JPanel panel = new JPanel();
+    	
     	// Create and initialize components.
     	setupLEDs();
     	
@@ -49,26 +57,56 @@ public class SoftPanelUI extends JPanel {
         JPanel lightboxPanel = setupLedBoxPanel();
         JPanel gaugePanel = setupGaugePanel();
         setupButtonPane();
-        setupSwitchPane();
+        JPanel switchPanel = setupSwitchPanel();
         
-        GroupLayout layout = new GroupLayout(this);
-		setLayout(layout);
+        
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints c = new GridBagConstraints();
+        
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.weightx = 0.5;
+        c.gridx = 0;
+        c.gridy = 0;
+        panel.add(lightboxPanel);
+        
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.weightx = 0.5;
+        c.gridx = 1;
+        c.gridy = 0;
+        c.gridheight = 2;
+        panel.add(switchPanel);
+        
+        c.fill = GridBagConstraints.HORIZONTAL;
+       // c.weightx = 0.0;
+        c.gridx = 0;
+        c.gridy = 1;
+        c.gridheight = 0;
+        panel.add(gaugePanel);
+        
+        
+        
+        
+        /*
+        GroupLayout layout = new GroupLayout(panel);
+		panel.setLayout(layout);
 		layout.setAutoCreateGaps(true);
 		layout.setAutoCreateContainerGaps(true);
 		
 		layout.setHorizontalGroup(layout.createSequentialGroup()
 				.addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
 						.addComponent(lightboxPanel)
-						.addComponent(gaugePanel))
-			);
-		layout.setVerticalGroup(layout.createSequentialGroup()
-				.addComponent(lightboxPanel)
+						.addComponent(switchPanel))
 				.addComponent(gaugePanel)
 			);
-		
-		//JScrollPane scrollPane = new JScrollPane(panel);
-		//scrollPane.setPreferredSize(new Dimension(600, 800));
-		//add(scrollPane);
+		layout.setVerticalGroup(layout.createSequentialGroup()
+						.addComponent(lightboxPanel)
+						.addComponent(gaugePanel)
+				.addComponent(switchPanel)
+			);
+		*/
+		JScrollPane scrollPane = new JScrollPane(panel);
+		scrollPane.setPreferredSize(new Dimension(screen.width - 100, screen.height - 100));
+		add(scrollPane);
     }
     
     private void setupLEDs() {
@@ -170,11 +208,11 @@ public class SoftPanelUI extends JPanel {
 	
 	private JPanel setupGaugePanel() {
 		// Create and load all icons.
-		ImageIcon pointerIcon = createImageIcon("/gauge_images/gauge_pointer.gif"); // The orange pointer
-		ImageIcon gauge1Icon = createImageIcon("/gauge_images/watertemp_c_0_100_gauge.gif"); // Water temp gauge
+		ImageIcon pIcon = createImageIcon("/gauge_images/gauge_pointer.gif"); // The orange pointer
+		ImageIcon g1Icon = createImageIcon("/gauge_images/watertemp_c_0_100_gauge.gif"); // Water temp gauge
 		// Resize them
-		ImageIcon pIcon = resizeIcon(pointerIcon, 12, 6);
-		ImageIcon g1Icon = resizeIcon(gauge1Icon,50,120);
+		pIcon = resizeIcon(pIcon, 12, 6);
+		g1Icon = resizeIcon(g1Icon,50,120);
 		
 		// Create and set up each layered pane.
 		gPane = new JLayeredPane[24];
@@ -185,9 +223,8 @@ public class SoftPanelUI extends JPanel {
 		
 		// All gauges will be added to one panel.
 		JPanel gaugePanel = new JPanel();
-		gaugePanel.setPreferredSize(new Dimension(450,600));
+		gaugePanel.setPreferredSize(new Dimension(400,600));
 		gaugePanel.setLayout(new GridLayout(5,5));
-		gaugePanel.setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
 		
 		for (int i=0; i<24; i++) {
 			gL[i] = new JLabel(g1Icon);
@@ -201,7 +238,6 @@ public class SoftPanelUI extends JPanel {
 			
 			gPane[i].add(gL[i], new Integer(0));
 			gPane[i].add(gP[i], new Integer(1));
-			
 			gaugePanel.add(gPane[i]); // Add to panel
 		}
 
@@ -225,11 +261,95 @@ public class SoftPanelUI extends JPanel {
         }
     }
     
-	private void setupButtonPane() {
+	private JPanel setupSwitchPanel() {
+		// Load all icons into an array
+		lever = new ImageIcon[19];
+		lever[0] = createImageIcon("/switch_images/0.gif"); // Rotated levers
+		lever[1] = createImageIcon("/switch_images/5.gif");
+		lever[2] = createImageIcon("/switch_images/10.gif");
+		lever[3] = createImageIcon("/switch_images/15.gif");
+		lever[4] = createImageIcon("/switch_images/20.gif");
+		lever[5] = createImageIcon("/switch_images/25.gif");
+		lever[6] = createImageIcon("/switch_images/30.gif");
+		lever[7] = createImageIcon("/switch_images/35.gif");
+		lever[8] = createImageIcon("/switch_images/40.gif");
+		lever[9] = createImageIcon("/switch_images/45.gif");
+		lever[10] = createImageIcon("/switch_images/50.gif");
+		lever[11] = createImageIcon("/switch_images/55.gif");
+		lever[12] = createImageIcon("/switch_images/60.gif");
+		lever[13] = createImageIcon("/switch_images/65.gif");
+		lever[14] = createImageIcon("/switch_images/70.gif");
+		lever[15] = createImageIcon("/switch_images/75.gif");
+		lever[16] = createImageIcon("/switch_images/80.gif");
+		lever[17] = createImageIcon("/switch_images/85.gif");
+		lever[18] = createImageIcon("/switch_images/90.gif");
+		ImageIcon onOffSwitch = createImageIcon("/switch_images/stop_start_switch.gif"); // The switch itself
+		ImageIcon switchBolt = createImageIcon("/switch_images/bolt.gif"); // Bolt to hold lever in place
 		
+		// Resize them
+		for (int i=0; i<19; i++) {
+			lever[i] = resizeIcon(lever[i],75,50);
+		}
+		onOffSwitch = resizeIcon(onOffSwitch,75,130);
+		switchBolt = resizeIcon(switchBolt,8,8);
+		
+		// Create and set up each layered pane.
+		JLayeredPane[] sPane = new JLayeredPane[25];
+		
+		// 1st layer = switch label; 2nd layer = led label, lever, text; 3rd layer = bolt;
+		
+		// Switch label
+		JLabel[] sLabel = new JLabel[25];
+		
+		
+		// Switch bolt label
+		JLabel[] sBoltLabel = new JLabel[25]; 
+		
+		sL = new JLabel[25]; // Switch lever
+		sLedLabel = new JLabel[25]; // Switch led label
+		//JLabel sTextLabel = new JLabel(); // Switch text label
+		
+		// All gauges will be added to one panel.
+		JPanel switchPanel = new JPanel();
+		switchPanel.setPreferredSize(new Dimension(500,700));
+		switchPanel.setLayout(new GridLayout(5,5));
+		
+		
+		LevelMouseListener handler = new LevelMouseListener();
+		for (int i=0; i<25; i++) {
+			sLabel[i] = new JLabel(onOffSwitch);
+			sLabel[i].setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
+			sLabel[i].setBounds(0,0,75,130);
+			
+			sBoltLabel[i] = new JLabel(switchBolt);
+			sBoltLabel[i].setBounds(34,84,8,8);
+			
+			sL[i] = new JLabel(lever[0]);
+			sL[i].setBounds(0,80,75,50);
+			
+			
+			sL[i].addMouseListener(handler); // Add mouse listener for lever movement
+			sL[i].addMouseMotionListener(handler);
+			sLedLabel[i] = new JLabel();
+			sLedLabel[i].setBounds(20, 22, 35, 25);
+			sLedLabel[i].setOpaque(true);
+			sLedLabel[i].setBackground(Color.GRAY);
+			
+			sPane[i] = new JLayeredPane();
+			sPane[i].setPreferredSize(new Dimension(75,130));
+			
+			sPane[i].add(sLabel[i], new Integer(0));
+			sPane[i].add(sLedLabel[i], new Integer(1));
+			sPane[i].add(sL[i], new Integer(2));
+			sPane[i].add(sBoltLabel[i], new Integer(3));
+			
+			switchPanel.add(sPane[i]); // Add to panel
+		}
+
+		return switchPanel;
 	}
 	
-	private void setupSwitchPane() {
+	private void setupButtonPane() {
 		
 	}
 	
@@ -262,7 +382,6 @@ public class SoftPanelUI extends JPanel {
     	
     	// Build the File menu
     	JMenu fileMenu = new JMenu("File");
-    	fileMenu.setMnemonic(KeyEvent.VK_ALT); // Pressing the Alt key accesses this menu
     	JMenuItem exitItem = new JMenuItem("Exit");
     	fileMenu.add(exitItem);
     	// Build the Window menu
@@ -290,6 +409,37 @@ public class SoftPanelUI extends JPanel {
             }
         });
         
+        /****************************************************************************************
+         * Testing
+         */
+        try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        
+        moveLever(5,0);
+        moveLever(6,1);
+        moveLever(7,2);
+        moveLever(8,3);
+        moveLever(9,4);
+        moveLever(10,5);
+        moveLever(11,6);
+        moveLever(12,7);
+        moveLever(13,8);
+        moveLever(14,9);
+        moveLever(15,10);
+        moveLever(16,11);
+        moveLever(17,12);
+        moveLever(18,13);
+        moveLever(19,14);
+        moveLever(20,15);
+        moveLever(21,16);
+        moveLever(22,17);
+        moveLever(23,18);
+        
+
         // Test LEDs   
         int delay = 1000; //milliseconds
         // Flash led for no reason
@@ -315,12 +465,12 @@ public class SoftPanelUI extends JPanel {
        Timer timer2 = new Timer();
        
        timer2.scheduleAtFixedRate(new TimerTask() {
-    	   int k=0, flag=1;
+    	   int k=0, j=0, flag=1, flag2=1;
     	   
     	   @Override
     	   public void run() {
     		   if (gP[3] != null)
-    			   movePointer(gP[3], k);
+    			   movePointer(3, k);
     		   
     		   if (k == 100)
     			   flag = 0;
@@ -330,18 +480,226 @@ public class SoftPanelUI extends JPanel {
     			   k--;
     		   else k++;
     		   
+    		   if (sL[1] != null) {
+    			   moveLever(1, j);
+    		   }
+    		   if (j == 18)
+    			   flag2 = 0;
+    		   else if (j == 0)
+    			   flag2 = 1;
+    		   
+    		   if (flag2 == 0)
+    			   j--;
+    		   else j++;
     	   }
-       }, delay, delay/30);
+       }, delay, 30);
     }
     /**
-     * Moves a gauge's pointer to a desired location.
+     * Moves a gauge's pointer to a specified location.
      * 
      * @param pointer: The label of the pointer to move
      * @param percentage: Used for location, 0% is min and 100% is max
      */
-    private static void movePointer(JLabel pointer, int percentage) {
+    private static void movePointer(int pointer, int percentage) {
     	// Set the new bounds
-    	pointer.setBounds(3, 107 - percentage, 12, 6);
+    	gP[pointer].setBounds(3, 107 - percentage, 12, 6);
+    }
+    
+    /**
+     * Moves a switch's lever to specified rotation
+     * 
+     * @param 
+     */
+    private static void moveLever(int s, int rotation) {
+    	sL[s].setIcon(lever[rotation]);
+    	
+    	// Change switch's LED color if necessary.
+    	if (rotation == 0) {
+    		// Switch is off, gray led.
+    		sLedLabel[s].setBackground(Color.GRAY);
+    	}
+    	else if (rotation == 18) {
+    		// Switch is on, green led.
+    		sLedLabel[s].setBackground(new Color(0,128,0));
+    	}
+    }
+    
+    private class LevelMouseListener extends MouseInputAdapter {
+    	boolean leverIsSelected, onFlag;
+    	int xMax=0; // The farthest x coordinate the user can drag the level to
+    	double dx;
+    	JLabel switchNum;
+    	
+		@Override
+		public void mousePressed(MouseEvent e) {
+			// Determine if user has clicked the lever.
+			int position;
+			
+			// Get which switch is changing.
+			switchNum = (JLabel)e.getSource();
+			
+			// Get lever points.
+			Point[] point = getPoints();
+			
+			System.out.println("X:" + Integer.toString(e.getX()));
+			System.out.println("Y:" + Integer.toString(e.getY()));
+			
+			Point test = new Point(e.getX(), e.getY());
+			
+			position = (point[1].x - point[0].x)*(test.y - point[0].y) - (point[1].y - point[0].y)*(test.x-point[0].x);
+			if (position >= 0 && test.y > 11) {
+				position = (point[3].x - point[2].x)*(test.y - point[2].y) - (point[3].y - point[2].y)*(test.x-point[2].x);
+				if (position <= 0) {
+					System.out.println("Selected");
+					leverIsSelected = true;
+					
+					// Determine x max.
+					if (test.y < 14) {
+						xMax = test.x + 10;
+						dx = 10/18;
+					}
+				}
+				else {
+					System.out.println("Not selected");
+					leverIsSelected = false;
+				}
+			} 
+			else {
+				System.out.println("Not selected");
+				leverIsSelected = false;
+			}
+
+		}
+
+		private Point[] getPoints() {
+			Point[] point = new Point[4];
+			
+			if (switchNum.getIcon().equals(lever[0])) { // Lever 0
+				System.out.println("got35");			
+				point[0] = new Point(12,39);
+				point[1] = new Point(31,11);
+				point[2] = new Point(13,38);
+				point[3] = new Point(36,16);	
+			}
+			else if (switchNum.getIcon().equals(lever[1])) {
+				
+			}
+			else if (switchNum.getIcon().equals(lever[2])) {
+							
+						}
+			else if (switchNum.getIcon().equals(lever[3])) {
+				
+			}
+			else if (switchNum.getIcon().equals(lever[4])) {
+				
+			}
+			else if (switchNum.getIcon().equals(lever[5])) {
+				
+			}
+			else if (switchNum.getIcon().equals(lever[6])) {
+				
+			}
+			else if (switchNum.getIcon().equals(lever[7])) {
+				
+			}
+			else if (switchNum.getIcon().equals(lever[8])) {
+				
+			}
+			else if (switchNum.getIcon().equals(lever[9])) {
+				
+			}
+			else if (switchNum.getIcon().equals(lever[10])) {
+				
+			}
+			else if (switchNum.getIcon().equals(lever[11])) {
+				
+			}
+			else if (switchNum.getIcon().equals(lever[12])) {
+				
+			}
+			else if (switchNum.getIcon().equals(lever[13])) {
+				
+			}
+			else if (switchNum.getIcon().equals(lever[14])) {
+				
+			}
+			else if (switchNum.getIcon().equals(lever[15])) {
+				
+			}
+			else if (switchNum.getIcon().equals(lever[16])) {
+				
+			}
+			else if (switchNum.getIcon().equals(lever[17])) {
+				
+			}
+			else if (switchNum.getIcon().equals(lever[18])) {
+				
+			}
+			return point;
+		}
+
+		@Override
+		public void mouseDragged(MouseEvent e) {
+			if (leverIsSelected) {
+				// Update frame when necessary
+				//setFrame(e);
+				
+			}
+		}
+		private int setFrame(MouseEvent e) {
+			if (e.getY() < 14) {
+				
+				System.out.println("X:" + Integer.toString(e.getX()));
+				System.out.println("Y:" + Integer.toString(e.getY()));
+				
+				if (e.getX() > 42) {
+					switchNum.setIcon(lever[18]);
+				}
+				else if (e.getX() > 41) {
+					switchNum.setIcon(lever[16]);
+				}
+				else if (e.getX() > 40) {
+					switchNum.setIcon(lever[14]);
+				}
+				else if (e.getX() > 39) {
+					switchNum.setIcon(lever[12]);
+				}
+				else if (e.getX() > 38) {
+					switchNum.setIcon(lever[10]);
+					onFlag = true;
+				}
+				else if (e.getX() > 36) {
+					switchNum.setIcon(lever[8]);
+				}
+				else if (e.getX() > 34) {
+					switchNum.setIcon(lever[6]);
+				}
+				else if (e.getX() > 32) {
+					switchNum.setIcon(lever[4]);
+				}
+				else if (e.getX() > 30) {
+					switchNum.setIcon(lever[2]);
+				}
+				else if (e.getX() > 29) {
+					switchNum.setIcon(lever[0]);
+				}
+			}
+			return -1;
+		}
+
+		@Override
+		public void mouseReleased(MouseEvent e) {
+			leverIsSelected = false;
+			
+			if (onFlag == true)
+				switchNum.setIcon(lever[18]);
+			else {
+				switchNum.setIcon(lever[0]);
+			}
+			
+			
+		}
+    	
     }
 
 }
