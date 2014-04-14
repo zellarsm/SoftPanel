@@ -33,6 +33,6 @@ public class Gauge {
 	}
 	public void createPointerLabel(ImageIcon p) {
 		this.pointerLabel = new JLabel(p);
-		this.pointerLabel.setBounds(3, 110-p.getIconHeight()/2, p.getIconWidth(), p.getIconHeight());
+		this.pointerLabel.setBounds(5, 165-p.getIconHeight()/2, p.getIconWidth(), p.getIconHeight()); // **Dependent on icon size
 	}
 }

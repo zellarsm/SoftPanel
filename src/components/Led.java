@@ -1,6 +1,7 @@
 package components;
 
 import java.awt.Color;
+import java.awt.Dimension;
 
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
@@ -18,7 +19,7 @@ public class Led {
 		this.column = column;
 		this.status = status;
 		
-		this.label = new JLabel(name); // The JLabel used to represent the led
+		this.label = new JLabel("      " + name + "      "); // The JLabel used to represent the led
 		this.label.setOpaque(true); // Allows coloring of label backgrounds
 		this.label.setBackground(new Color(157, 162, 149));
 		this.label.setHorizontalAlignment(SwingConstants.CENTER);
